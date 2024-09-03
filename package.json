@@ -159,6 +159,7 @@
   "dependencies": {
     "elegant-spinner": "2.0.0",
     "jmespath": "0.15.0",
+    "node-fetch": "^3.3.2",
     "semver": "7.5.2",
     "vscode": "^1.1.37"
   }
