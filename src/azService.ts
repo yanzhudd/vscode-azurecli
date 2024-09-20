@@ -157,7 +157,10 @@ export class AzService {
                     for (const entry of entries) {
                         const packagesPath = `${libPath}/${entry}/site-packages`;
                         if (await exists(packagesPath)) {
-                            return { env: { 'PYTHONPATH': packagesPath } };
+                            return { 
+                                env: { 'PYTHONPATH': packagesPath},
+                                shell: true
+                            };
                         }
                     }
                 }
@@ -165,7 +168,7 @@ export class AzService {
                 console.error(err);
             }
         }
-        return undefined;
+        return {shell: true};
     }
 
     private spawn(pythonLocation: string, processOptions?: SpawnOptions) {
