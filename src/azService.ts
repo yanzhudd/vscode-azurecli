@@ -135,7 +135,7 @@ export class AzService {
             if (version && semver.valid(version) && !semver.gte(version, '2.0.5')) {
                 throw 'wrongVersion';
             }
-            const pythonLocation = (/^Python location '([^']*)'/m.exec(stdout) || [])[1];
+            const pythonLocation = '"' + (/^Python location '([^']*)'/m.exec(stdout) || [])[1] + '"';
             const processOptions = await this.getSpawnProcessOptions();
             return this.spawn(pythonLocation, processOptions);
         })().catch(err => {
