@@ -6,13 +6,15 @@ type Dictionary = {
     [key: string]: any 
 };
 
-async function sendPostRequest(url: string, data: Dictionary): Promise<any> {  
+const endpointUrl = 'https://azclitools-copilot-apim-vscode.azure-api.net/azcli/copilot/streaming';
+
+export async function sendPostRequest(data: Dictionary): Promise<any> {  
     try {  
 
         const credential = new DefaultAzureCredential();
         const auth_token = await credential.getToken("https://management.core.windows.net/.default")
 
-        const response = await fetch(url, {  
+        const response = await fetch(endpointUrl, {  
             method: 'POST',  
             headers: {  
                 'Content-Type': 'application/json',
@@ -33,7 +35,6 @@ async function sendPostRequest(url: string, data: Dictionary): Promise<any> {
     }  
 }  
 
-const endpointUrl = 'https://azclitools-copilot-apim-vscode.azure-api.net/azcli/copilot/streaming';
 
 export async function copilotRequestHandler(request: vscode.ChatRequest, context: vscode.ChatContext, stream: vscode.ChatResponseStream, token: vscode.CancellationToken) {
 
@@ -54,7 +55,7 @@ export async function copilotRequestHandler(request: vscode.ChatRequest, context
 
     stream.progress('Retrieve Azure CLI related knowledge ......');
 
-    const reader = await sendPostRequest(endpointUrl, postData);
+    const reader = await sendPostRequest(postData);
     const decoder = new TextDecoder(); 
  
     while (true) {  
@@ -68,4 +69,9 @@ export async function copilotRequestHandler(request: vscode.ChatRequest, context
         stream.markdown(fragment);
     }  
 
+}
+
+
+export class AzService {
+    
 }

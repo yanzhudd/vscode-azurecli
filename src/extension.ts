@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as jmespath from 'jmespath';
-import { HoverProvider, Hover, SnippetString, StatusBarAlignment, StatusBarItem, ExtensionContext, TextDocument, TextDocumentChangeEvent, Disposable, TextEditor, Selection, languages, commands, Range, ViewColumn, Position, CancellationToken, ProviderResult, CompletionItem, CompletionList, CompletionItemKind, CompletionItemProvider, window, workspace, env, Uri, WorkspaceEdit, l10n,  } from 'vscode';
+import { HoverProvider, Hover, SnippetString, StatusBarAlignment, StatusBarItem, TextDocument, TextDocumentChangeEvent, Disposable, TextEditor, Selection, languages, commands, Range, ViewColumn, Position, CancellationToken, ProviderResult, CompletionItem, CompletionList, CompletionItemKind, CompletionItemProvider, InlineCompletionItemProvider, window, workspace, env, Uri, WorkspaceEdit, l10n, InlineCompletionContext, InlineCompletionItem, InlineCompletionList, CompletionTriggerKind} from 'vscode';
 import * as process from "process";
 
 import { AzService, CompletionKind, Arguments, Status } from './azService';
@@ -12,11 +12,12 @@ import { exec } from './utils';
 import * as spinner from 'elegant-spinner';
 
 import * as vscode from 'vscode';
-import { copilotRequestHandler } from './copilotRequestHandler';
+import { copilotRequestHandler, sendPostRequest } from './copilotService';
 
 export function activate(context: vscode.ExtensionContext) {
     const azService = new AzService(azNotFound);
     context.subscriptions.push(languages.registerCompletionItemProvider('azcli', new AzCompletionItemProvider(azService), ' '));
+    context.subscriptions.push(languages.registerInlineCompletionItemProvider('azcli', new CopilotProvider()));
     context.subscriptions.push(languages.registerHoverProvider('azcli', new AzHoverProvider(azService)));
     const status = new StatusBarInfo(azService);
     context.subscriptions.push(status);
@@ -26,7 +27,6 @@ export function activate(context: vscode.ExtensionContext) {
 
     const chatParticipant = vscode.chat.createChatParticipant("ms-azurecli.copilot", copilotRequestHandler);
     context.subscriptions.push(chatParticipant);
-
 }
 
 const completionKinds: Record<CompletionKind, CompletionItemKind> = {
@@ -36,6 +36,60 @@ const completionKinds: Record<CompletionKind, CompletionItemKind> = {
     argument_value: CompletionItemKind.EnumMember,
     snippet: CompletionItemKind.Snippet
 };
+
+
+class CopilotProvider implements InlineCompletionItemProvider {
+
+    constructor() {
+        console.log('CopilotProvider created');
+    }
+
+    provideInlineCompletionItems(document: TextDocument, position: Position, context: InlineCompletionContext, token: CancellationToken): ProviderResult<InlineCompletionItem[] | InlineCompletionList> {
+        console.log('provideInlineCompletionItems triggered ...');
+
+        const line = document.lineAt(position).text.trim();
+        if (position.line === 0 || line.length > 0) {
+            return;
+        }
+
+        const prevLine = document.lineAt(position.line - 1).text.trim();
+        const prevParsed = parse(prevLine);
+
+        const node = findNode(prevParsed, prevLine.length - 1);
+        if (!node || node.kind != 'comment') {
+            return;
+        }
+        const rawComment = (/\#([^\/\*]*)/g.exec(prevLine) || [])[1];
+        if (typeof rawComment !== 'string') {
+            return;
+        }
+        
+        const postData = {  
+            "question": rawComment.trim(),
+        };
+
+        return sendPostRequest(postData)
+            .then(async reader => { 
+                const decoder = new TextDecoder(); 
+                const items = []
+                while (true) {  
+                    const { done, value } =  await reader.read();  
+        
+                    if (done) {  
+                        break;  
+                    }  
+        
+                    const fragment = decoder.decode(value, { stream: true });  
+                    const item = new InlineCompletionItem(fragment)
+                    console.log('provide inline completion fragment: ', fragment);
+                    items.push(item)
+                }
+                
+                return items;
+            });
+    }
+}
+
 
 class AzCompletionItemProvider implements CompletionItemProvider {
 

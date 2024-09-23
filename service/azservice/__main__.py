@@ -307,7 +307,7 @@ def get_options(options):
     for option in options ] if option ]
 
 def main():
-    timings = False
+    timings = True
     start = time.time()
     initialize()
     if timings: print('initialize {} s'.format(time.time() - start), file=stderr)
