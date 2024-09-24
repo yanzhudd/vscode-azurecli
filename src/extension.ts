@@ -79,14 +79,22 @@ class CopilotProvider implements InlineCompletionItemProvider {
                         break;  
                     }  
         
-                    const fragment = decoder.decode(value, { stream: true });  
-                    const item = new InlineCompletionItem(fragment)
+                    const fragment = decoder.decode(value, { stream: true }); 
+                    const code = this.processResponse(fragment); 
+                    const item = new InlineCompletionItem(code)
                     console.log('provide inline completion fragment: ', fragment);
                     items.push(item)
                 }
                 
                 return items;
             });
+    }
+
+    private processResponse(fragment: string) {
+        const rawCode = (/\`\`\`azcli\n([^\`]*)\`\`\`/g.exec(fragment) || [])[1];
+        const code = rawCode.replace('\\', '').replace('\n', ' ')
+        console.log('code: ', code)
+        return code;
     }
 }
 
