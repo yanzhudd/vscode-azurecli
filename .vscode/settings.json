@@ -6,5 +6,6 @@
     "search.exclude": {
         "out": true // set this to false to include "out" folder in search results
     },
-    "python.pythonPath": "~/lib/azure-cli/bin/python"
+    "python.pythonPath": "~/lib/azure-cli/bin/python",
+    "github.copilot.editor.enableAutoCompletions": false
 }

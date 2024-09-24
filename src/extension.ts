@@ -71,7 +71,8 @@ class CopilotProvider implements InlineCompletionItemProvider {
         return sendPostRequest(postData)
             .then(async reader => { 
                 const decoder = new TextDecoder(); 
-                const items = []
+                const items = [];
+                let allCommands = "";
                 while (true) {  
                     const { done, value } =  await reader.read();  
         
@@ -80,21 +81,31 @@ class CopilotProvider implements InlineCompletionItemProvider {
                     }  
         
                     const fragment = decoder.decode(value, { stream: true }); 
-                    const code = this.processResponse(fragment); 
-                    const item = new InlineCompletionItem(code)
-                    console.log('provide inline completion fragment: ', fragment);
-                    items.push(item)
+                    const commands = this.processResponse(fragment);
+                    allCommands += commands.join('\n') + '\n';
+                    const item = new InlineCompletionItem(allCommands.trim());
+                    console.log('provide inline completion fragment: ', allCommands.trim());
+                    items.push(item);
                 }
-                
+
                 return items;
             });
     }
 
-    private processResponse(fragment: string) {
-        const rawCode = (/\`\`\`azcli\n([^\`]*)\`\`\`/g.exec(fragment) || [])[1];
-        const code = rawCode.replace('\\', '').replace('\n', ' ')
-        console.log('code: ', code)
-        return code;
+    private processResponse(fragment: string): string[] {
+        const commands: string[] = [];
+
+        const regex = /```azcli\n([\s\S]*?)```/g;
+        let match;
+
+        while ((match = regex.exec(fragment)) !== null) {
+            const rawCode = match[1].trim();
+            const cleanedCode = rawCode.replace('\\', '').replace('\n', ' ').trim();
+            console.log('Extracted command: ', cleanedCode);
+            commands.push(cleanedCode);
+        }
+
+        return commands;
     }
 }
 
