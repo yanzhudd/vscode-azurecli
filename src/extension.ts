@@ -81,6 +81,7 @@ class CopilotProvider implements InlineCompletionItemProvider {
                     }  
         
                     const fragment = decoder.decode(value, { stream: true }); 
+                    console.log('fragment: ', fragment);
                     const commands = this.processResponse(fragment);
                     allCommands += commands;
                     const item = new InlineCompletionItem(allCommands.trim());
