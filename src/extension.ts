@@ -82,7 +82,7 @@ class CopilotProvider implements InlineCompletionItemProvider {
         
                     const fragment = decoder.decode(value, { stream: true }); 
                     const commands = this.processResponse(fragment);
-                    allCommands += commands.join('\n') + '\n';
+                    allCommands += commands;
                     const item = new InlineCompletionItem(allCommands.trim());
                     console.log('provide inline completion fragment: ', allCommands.trim());
                     items.push(item);
@@ -92,17 +92,17 @@ class CopilotProvider implements InlineCompletionItemProvider {
             });
     }
 
-    private processResponse(fragment: string): string[] {
-        const commands: string[] = [];
+    private processResponse(fragment: string): string {
+        let commands: string = "";
 
         const regex = /```azcli\n([\s\S]*?)```/g;
         let match;
 
         while ((match = regex.exec(fragment)) !== null) {
             const rawCode = match[1].trim();
-            const cleanedCode = rawCode.replace('\\', '').replace('\n', ' ').trim();
+            const cleanedCode = rawCode.replace(/\\/gi, '').replace(/\n/gi, ' ').replace(/[ ]+/gi, ' ').trim();
             console.log('Extracted command: ', cleanedCode);
-            commands.push(cleanedCode);
+            commands += cleanedCode + '\n';
         }
 
         return commands;
